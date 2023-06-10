@@ -208,7 +208,7 @@ void *mm_realloc(void *ptr, size_t size)
     //printf("ptr : %p size : %d oldsize : %d\n",ptr,size,oldsize);
     void *newptr = NEXT_BLKP(ptr);
     //void *prevp = PREV_BLKP(ptr);
-    void *temp;
+    //void *temp;
     size_t newsize = oldsize + GET_SIZE(HDRP(newptr));
     //size_t prevsize = oldsize + GET_SIZE(HDRP(prevp));
     /* If size == 0 then this is just free, and we return NULL. */
@@ -251,9 +251,9 @@ void *mm_realloc(void *ptr, size_t size)
             PUT(HDRP(prevp), PACK(size,1));
             PUT(FTRP(prevp), PACK(size,1));
             newptr = NEXT_BLKP(prevp);
-            PUT(HDRP(newptr), PACK(newsize-size,0));
-            PUT(FTRP(newptr), PACK(newsize-size,0));
-            link_add(newptr);
+            PUT(HDRP(newptr), PACK(newsize-size,1));
+            PUT(FTRP(newptr), PACK(newsize-size,1));
+            mm_free(newptr);
             return prevp;
         }*/
     }
