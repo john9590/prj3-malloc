@@ -31,15 +31,6 @@ team_t team = {
     "john9590@sogang.ac.kr",
 };
 
-/* single word (4) or double word (8) alignment */
-#define ALIGNMENT 8
-
-/* rounds up to the nearest multiple of ALIGNMENT */
-#define ALIGN(size) (((size) + (ALIGNMENT-1)) & ~0x7)
-
-
-#define SIZE_T_SIZE (ALIGN(sizeof(size_t)))
-
 #define NEXT_FITx
 
 /* $begin mallocmacros */
@@ -71,8 +62,8 @@ team_t team = {
 #define NEXT_BLKP(bp)  ((char *)(bp) + GET_SIZE(((char *)(bp) - WSIZE))) //line:vm:mm:nextblkp
 #define PREV_BLKP(bp)  ((char *)(bp) - GET_SIZE(((char *)(bp) - DSIZE))) //line:vm:mm:prevblkp
 
-#define NEXT_BLNK(bp)  (*(void **)((bp)+WSIZE))//GET((char *)(NTRP(bp)))//line:vm:mm:nextblkp
-#define PREV_BLNK(bp)  (*(void **)(bp))//GET((char *)(PVRP(bp)))//line:vm:mm:prevblkp
+#define NEXT_BLNK(bp)  GET((char *)(NTRP(bp)))
+#define PREV_BLNK(bp)  GET((char *)(PVRP(bp)))
 
 //#define NEXT_BLNK(bp)  GET((char *)(bp))
 /* $end mallocmacros */
@@ -82,8 +73,6 @@ team_t team = {
 
 /* Global variables */
 static char *heap_listp = 0;  /* Pointer to first block */  
-static char *heap_last = 0;
-static char *heap_max_size = 0;
 
 static char *seg_listp = 0;
 static void *extend_heap(size_t words);
@@ -265,7 +254,10 @@ void *mm_realloc(void *ptr, size_t size)
 {
     size_t oldsize = GET_SIZE(HDRP(ptr));
     //printf("ptr : %p size : %d oldsize : %d\n",ptr,size,oldsize);
-    size = MAX(ALIGN(size) + DSIZE, 2 * DSIZE);
+    if (size <= DSIZE)                                          //line:vm:mm:sizeadjust1
+        size = 2*DSIZE;                                        //line:vm:mm:sizeadjust2
+    else
+        size = DSIZE * ((size + (DSIZE) + (DSIZE-1)) / DSIZE);
     void *newptr = NEXT_BLKP(ptr);
     void *prevp = PREV_BLKP(ptr);
     //void *temp;
@@ -384,10 +376,6 @@ static void *extend_heap(size_t words)
     //PUT(bp+WSIZE, heap_listp); //next 이전꺼
     PUT(FTRP(bp), PACK(size, 0));         /* Free block footer */   //line:vm:mm:freeblockftr
     PUT(HDRP(NEXT_BLKP(bp)), PACK(0, 1)); /* New epilogue header */ //line:vm:mm:newepihdr
-    if (heap_last == 0 ) {
-        heap_last = GET(NEXT_BLKP(bp)) + 1;
-        heap_max_size = heap_last + CHUNKSIZE;
-    }
     //printf("extend %d %p\n",size,bp);
     /* Coalesce if the previous block was free */
     return coalesce(bp);                                          //line:vm:mm:returnblock
