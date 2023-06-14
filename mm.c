@@ -498,6 +498,7 @@ static void *find_fit(size_t asize)
             size = 1<<(j+1);
             for (void *cur = PREV_BLNK(bp); cur!=NULL; cur = PREV_BLNK(cur)){
                 //printf("%p\n",cur);
+                if (asize<=GET_SIZE(HDRP(cur))) return cur;
                 if (asize<=GET_SIZE(HDRP(cur))&&GET_SIZE(HDRP(cur))-asize<size){
                     best = cur;
                     size = GET_SIZE(HDRP(cur)) - asize;
